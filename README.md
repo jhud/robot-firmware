@@ -1,9 +1,15 @@
 
+
 # Robot Firmware
+
+This robot is designed as a cheap and simple testbed for the GPT age; an embodied interface for your machine learning projects.
+
 
 This is the Arduino firmware for my small robot motherboard, whose corrseponding KiCAD files can be found in another repo of mine.
 
-This robot is designed as a cheap and simple testbed for the GPT age; an embodied interface for your machine learning projects.
+![robot image](https://github.com/jhud/robot_board/raw/main/images/robot.jpg)
+
+![robot board](https://github.com/jhud/robot_board/raw/main/images/robot_2.jpg)
 
 ## Features
 
@@ -18,7 +24,7 @@ This robot is designed as a cheap and simple testbed for the GPT age; an embodie
  - Over-the-air updates via WiFi
  - Physical switches can be configured to interrupt movement locally, to avoid hitting obstacles.
 
-#Setup 
+# Setup 
 
 Install all the needed Arduino libraries, and flash the motherboard via USB or UART.
 
