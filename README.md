@@ -1,11 +1,8 @@
-
-
 # Robot Firmware
 
-This robot is designed as a cheap and simple testbed for the GPT age; an embodied interface for your machine learning projects.
+This robot is designed as a cheap and simple testbed for the GPT age; a physical body for your machine learning projects.
 
-
-This is the Arduino firmware for my small robot motherboard, whose corrseponding KiCAD files can be found in another repo of mine.
+This is the Arduino firmware for my small robot motherboard. [The corresponding KiCAD files](https://github.com/jhud/robot_board).
 
 ![robot image](https://github.com/jhud/robot_board/raw/main/images/robot.jpg)
 
@@ -27,6 +24,10 @@ This is the Arduino firmware for my small robot motherboard, whose corrseponding
 # Setup 
 
 Install all the needed Arduino libraries, and flash the motherboard via USB or UART.
+
+Recommended Arduino board settings for the stock hardware rev 3 are as follows:
+![esp32_s3_USB_settings](/media/esp32_s3_USB_settings.png)
+
 
 On first use, the robot will create a wifi hotspot called "Robot init", where you can setup your wifi connection. You can always tap the option key just after startup to reset the wifi. 
 
