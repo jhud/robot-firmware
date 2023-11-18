@@ -66,6 +66,14 @@ Gain Rate	Gain Pin Connection
 3 dB	Connected to VDD/Vin through a 100kΩ resistor
 ```
 
+## Current calibration
+
+You can call this to calibrate current sensing automatically:
+```
+ds2438Primary.writeCurrentOffset(1);
+```
+Note that it should only be called with zero current draw across the shunt, ie you could short out the shunt resistor.
+
 ## Voice
 
 ### Modifying

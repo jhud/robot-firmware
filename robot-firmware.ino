@@ -59,6 +59,7 @@
 #define FOOT_1_PIN 1
 #define FOOT_2_PIN 5
 #define FOOT_3_PIN 16 // Is a strapping pin on ESP32-S3. Switched to GPIO16 on the latest board revision
+#define FOOT_4_PIN 4
 
 #define KILLSWITCH_BUTTON_BITMASK (1 << 8) // bitmask of pushbutton in "pressed" bitfield
 #define OPTION_BUTTON_BITMASK (1 << 9) // bitmask of pushbutton in "pressed" bitfield
@@ -521,7 +522,7 @@ void setup_gpios() {
   pinMode(FOOT_1_PIN, INPUT_PULLUP); // 17 on old board used by PSRAM
   pinMode(FOOT_2_PIN, INPUT_PULLUP);
   pinMode(FOOT_3_PIN, INPUT_PULLUP); 
-  pinMode(4, INPUT_PULLUP);
+  pinMode(FOOT_4_PIN, INPUT_PULLUP);
   pinMode(6, INPUT_PULLUP);
       pinMode(2, INPUT_PULLUP);
     pinMode(7, INPUT_PULLUP);
@@ -917,7 +918,7 @@ void updateFootSwitches() {
   buttonsNow |= !digitalRead(FOOT_1_PIN) << 0;
   buttonsNow |= !digitalRead(FOOT_2_PIN) << 1;
   buttonsNow |= !digitalRead(FOOT_3_PIN) << 2;
-  buttonsNow |= !digitalRead(4) << 3;
+  buttonsNow |= !digitalRead(FOOT_4_PIN) << 3;
   buttonsNow |= !digitalRead(6) << 4;
   buttonsNow |= !digitalRead(2) << 5;
   buttonsNow |= !digitalRead(7) << 6;
@@ -1029,11 +1030,19 @@ void loop()
      queueSpeech(F("Kill switch pressed."));
       // On the high-level controller end, we should halt all execution also.
     }
-    else if (pressed & OPTION_BUTTON_BITMASK) {
+    if (pressed & (OPTION_BUTTON_BITMASK | 128)) {
       char buff[64];
       double batteryVoltage = ds2438_mainBatteryVoltage();
       snprintf_P(buff, sizeof(buff), PSTR("Battery %.1f volts"), batteryVoltage);
       queueSpeech(buff);
+
+
+      int acd = ds2438_accumulatedCharge();
+      snprintf_P(buff, sizeof(buff), PSTR("Accumulated charge %.1f units"), acd);
+      queueSpeech(buff);
+
+
+      
     }
     pressed = 0;
   }

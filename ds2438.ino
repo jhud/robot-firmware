@@ -39,8 +39,7 @@ bool ds2438_init() {
 
   log(F("Secondary ADC ok."));
 
-  // Should be saved in the DS2438's EEPROM, but can recalibrate here
-  ds2438Primary.writeCurrentOffset(1); 
+  // Should be saved in the DS2438's EEPROM, but can recalibrate here. Make sure shunt resistor is shorted.
 
   // Cycle through the states so that we already have all measurements ready to read.
   ds2438_blockingUpdate();
@@ -79,8 +78,13 @@ double ds2438_temp() {
 
 
 double ds2438_currentAmps() {
-  return -ds2438Primary.getCurrent(0.01f); // Chip has vSense flipped, so reverse it
+  return -ds2438Primary.getCurrent(0.01f); // Chip has vSense flipped, so reverse it. This is fixed in the next hardware revision 4.
 }
+
+int ds2438_accumulatedCharge() {
+  return ds2438Primary.getAccumulatedChargeData(); 
+}
+
 
 double ds2438_mainBatteryVoltage() {
   return ds2438Primary.getVoltage(DS2438_CHB);
