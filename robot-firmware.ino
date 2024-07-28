@@ -12,10 +12,16 @@
  *  
  */
 
+// The first complete robot, using ESP32-S3. Otherwise an older ESP32 board with different pin mappings.
+//#define FIRST_ROBOT
+
 #define USE_OTA
 //#define USE_IR
 #define HIGH_QUALITY_SPEECH
-#define USE_VL53l0X
+
+#ifdef FIRST_ROBOT
+  #define USE_VL53l0X
+#endif
 #define USE_DS2438
 //#define USE_IMU
 //#define I2C_SCAN
@@ -45,26 +51,41 @@
 
 #define WDT_TIMEOUT_S 15 // Overrride the OS default
 
-#define STATUS_LED_PIN 17
-#define ERROR_LED_PIN 12
-#define INFO_LED_PIN 39
-#define BUSY_LED_PIN 41
+// --- PIN MAPPINGS
 
+// Common to all boards
 #define FLASH_SWITCH_PIN 0  // Flashing switch GPIO0. Note that setting an interrupt on this breaks I2S, and it always outputs 2MHz square wave wit I2S for some reason
 
-#define TOGGLE_SWITCH_PIN 15 
-//#define OPTION_PUSHBUTTON_PIN 11 // For some reason, this pin bleeds over into GPIO 12. Even with a minimal example sketch. Seems OK on other S3 in test jig. Maybe broken ESP32? 
-#define KILLSWITCH_PUSHBUTTON_PIN 13
 
-#define FOOT_1_PIN 1
-#define FOOT_2_PIN 5
-#define FOOT_3_PIN 16 // Is a strapping pin on ESP32-S3. Switched to GPIO16 on the latest board revision
-#define FOOT_4_PIN 4
+#ifdef FIRST_ROBOT
+// S3 rev board
+  #define STATUS_LED_PIN 17
+  #define ERROR_LED_PIN 12
+  #define INFO_LED_PIN 39
+  #define BUSY_LED_PIN 41
+    
+  #define TOGGLE_SWITCH_PIN 15 
+  //#define OPTION_PUSHBUTTON_PIN 11 // For some reason, this pin bleeds over into GPIO 12. Even with a minimal example sketch. Seems OK on other S3 in test jig. Maybe broken ESP32? 
+  #define KILLSWITCH_PUSHBUTTON_PIN 13
+  
+  #define FOOT_1_PIN 1
+  #define FOOT_2_PIN 5
+  #define FOOT_3_PIN 16 // Is a strapping pin on ESP32-S3. Switched to GPIO16 on the latest board revision
+  #define FOOT_4_PIN 4
+  
+  #define IR_PIN 16
+#else
+// Old board
+  #define STATUS_LED_PIN 32
+  #define ERROR_LED_PIN 12
+  #define TOGGLE_SWITCH_PIN 33 // Might not have interrupt, USE_for slide switch
+  #define ACTION_PUSHBUTTON_PIN 13
 
-#define KILLSWITCH_BUTTON_BITMASK (1 << 8) // bitmask of pushbutton in "pressed" bitfield
-#define OPTION_BUTTON_BITMASK (1 << 9) // bitmask of pushbutton in "pressed" bitfield
+  #define IR_PIN 35
+#endif
 
-#define IR_PIN 16
+  #define KILLSWITCH_BUTTON_BITMASK (1 << 8) // bitmask of pushbutton in "pressed" bitfield
+  #define OPTION_BUTTON_BITMASK (1 << 9) // bitmask of pushbutton in "pressed" bitfield
 
 const int MAX_SPEECH_LEN = 128; // Max speech len in characters - the network seems to have problems handling much longer than 128 so let's cap it: this is enough for a sentence. Also we don't want to dealock the CPU for a huge length of time.
 const int MAX_RESPONSE_PACKET_LEN = 256; // Max respone len in bytes
@@ -77,12 +98,16 @@ const int MAX_RESPONSE_PACKET_LEN = 256; // Max respone len in bytes
 // Note by default pin 36 is used by internal ESP32 wifi power management code, so we need to set the wifi mode before we can USE_it
 
 void setBusyLED() {
+#ifdef BUSY_LED_PIN
   clear_gpio(BUSY_LED_PIN);
+#endif
   //digitalWrite(BUSY_LED_PIN, 1);
   }
   
 void clearBusyLED() {
+#ifdef BUSY_LED_PIN
     set_gpio(BUSY_LED_PIN);
+#endif
   //digitalWrite(BUSY_LED_PIN, 0);
 }
 
@@ -519,6 +544,7 @@ void setup_gpios() {
 
 
     // Foot switches
+#ifdef FOOT_1_PIN
   pinMode(FOOT_1_PIN, INPUT_PULLUP); // 17 on old board used by PSRAM
   pinMode(FOOT_2_PIN, INPUT_PULLUP);
   pinMode(FOOT_3_PIN, INPUT_PULLUP); 
@@ -527,9 +553,14 @@ void setup_gpios() {
       pinMode(2, INPUT_PULLUP);
     pinMode(7, INPUT_PULLUP);
     pinMode(10, INPUT_PULLUP);
+#else
+  Serial.println(F("Foot switches disabled, not setting up."));
+#endif
 
+#ifdef KILLSWITCH_PUSHBUTTON_PIN
   pinMode(KILLSWITCH_PUSHBUTTON_PIN, INPUT_PULLUP); // GP push button switch for UI
   attachInterrupt(KILLSWITCH_PUSHBUTTON_PIN, switch7, FALLING); // USE_an interrupt for this responsive UI switch
+#endif
 
   #ifdef OPTION_PUSHBUTTON_PIN
   pinMode(OPTION_PUSHBUTTON_PIN, INPUT_PULLUP); // GP push button switch for UI
@@ -566,6 +597,7 @@ void setup()
 
   //flite.setVoice(register_cmu_us_kal(nullptr));
   //flite.setVoice(register_cmu_us_slt(nullptr));
+  //flite.setVoice(register_cmu_us_kal_low(nullptr)); // James modified to make lower
 
 //      cst_voice *register_cmu_us_kal(const char*voxdir=nullptr); // default
 //    cst_voice *register_cmu_us_kal16(const char* voxdir=nullptr);
@@ -713,7 +745,7 @@ void setup()
     }
 
           bool res;
-      res = wm.autoConnect("Robot init"); // anonymous ap
+      res = wm.autoConnect("Robot init", "foobar00"); // anonymous ap
 
       if (!res) {
           log(F("Wifi fail"));
@@ -915,6 +947,8 @@ void updateFootSwitches() {
   static volatile uint16_t lastButtons = 0;
 
   uint16_t buttonsNow = 0;
+
+#ifdef FOOT_1_PIN
   buttonsNow |= !digitalRead(FOOT_1_PIN) << 0;
   buttonsNow |= !digitalRead(FOOT_2_PIN) << 1;
   buttonsNow |= !digitalRead(FOOT_3_PIN) << 2;
@@ -923,6 +957,7 @@ void updateFootSwitches() {
   buttonsNow |= !digitalRead(2) << 5;
   buttonsNow |= !digitalRead(7) << 6;
   buttonsNow |= !digitalRead(10) << 7;
+#endif
 
   // ui switch has interrupt, uses bit 8
 

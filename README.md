@@ -23,6 +23,8 @@ This is the Arduino firmware for my small robot motherboard. [The corresponding 
 
 # Setup 
 
+The Espressif ESP32 3.* library seems to be incompatible with Flite, so we are stuck at 2.0
+
 Install all the needed Arduino libraries, and flash the motherboard via USB or UART.
 
 Recommended Arduino board settings for the stock hardware rev 3 are as follows:
@@ -51,7 +53,7 @@ app1,     app,  ota_1,   0x710000,0x700000,
 spiffs,   data, spiffs,  0xE10000,0x1E0000,
 coredump, data, coredump,0xFF0000,0x10000,
 ```
-
+Or you can find all partition files in /arduino/esp32_toolchain_patches.
 
 ## PSRAM
 
@@ -83,6 +85,14 @@ Note that it should only be called with zero current draw across the shunt, ie y
 
 ## Voice
 
+### Setup
+
+Set this to true in the config file
+```
+// Activate/Deactivate built in I2S 
+#define ESP32_I2S_ACTIVE true
+```
+
 ### Modifying
 
 For Arduino Flite, you can change the speed and pitch of the voice within the library for the default voice.
@@ -90,6 +100,13 @@ For Arduino Flite, you can change the speed and pitch of the voice within the li
 int_f0_target_mean = change pitch
 int_f0_target_stddev = makes it more flat and robotic
 duration_stretch = change speed
+
+These values are a good fit for the robot. Look in cmu_us_kal:
+    /* Intonation */
+    flite_feat_set_float(v->features,"int_f0_target_mean", 100.0); // JAMES was 95.0
+    flite_feat_set_float(v->features,"int_f0_target_stddev", 7.0); // JAMES was 11.0 = lower is more robotic
+
+    flite_feat_set_float(v->features,"duration_stretch", 1.17);  // JAMES: changed from 1.1
 
 ### Problems with Flite library
 

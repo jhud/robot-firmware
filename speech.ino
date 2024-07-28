@@ -1,5 +1,6 @@
 #ifdef HIGH_QUALITY_SPEECH
 
+
 // -- Speech ---
 #include "flite_arduino.h" 
 
@@ -15,12 +16,21 @@
                 .use_apll = false
             };
 
+#ifdef FIRST_ROBOT
  static const i2s_pin_config_t pin_config_default = {
                 .bck_io_num = 48,
                 .ws_io_num = 38,
                 .data_out_num = 47,
                 .data_in_num = I2S_PIN_NO_CHANGE
             };
+#else
+           static const i2s_pin_config_t pin_config_default = {
+                .bck_io_num = 27,
+                .ws_io_num = 25,
+                .data_out_num = 26,
+                .data_in_num = I2S_PIN_NO_CHANGE
+            };
+#endif
 
 FliteOutputI2S *fliteOutput = new FliteOutputI2S(I2S_NUM_0, i2s_config_default, pin_config_default);
 
