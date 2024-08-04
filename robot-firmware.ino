@@ -21,6 +21,8 @@
 
 #ifdef FIRST_ROBOT
   #define USE_VL53l0X
+#else
+  #define USE_LIDAR
 #endif
 #define USE_DS2438
 //#define USE_IMU
@@ -47,6 +49,7 @@
 #include <Arduino.h>
 
 #include "mpu6050.h"
+#include "lidar_okdo.h"
 #include "fast_io.h"
 
 #define WDT_TIMEOUT_S 15 // Overrride the OS default
@@ -731,6 +734,19 @@ void setup()
   digitalWrite(STATUS_LED_PIN, (++ledStatus)&1);
 #endif
 
+#ifdef USE_LIDAR
+  if (lidar_init() == false) {
+     log(F("LIDAR not found."));
+  }
+  else {
+         log(F("LIDAR ok."));
+  }
+#endif
+
+#ifdef STATUS_LED_PIN
+  digitalWrite(STATUS_LED_PIN, (++ledStatus)&1);
+#endif
+
   log(F("Wifi search"));
 
   WiFi.mode(WIFI_STA);
@@ -1151,6 +1167,12 @@ void loop()
   }
   #endif
 
+#ifdef USE_LIDAR
+  LiDARFrameTypeDef * lidarPacket = lidar_update();
+  if (lidarPacket) {
+    clientSend((const char*)lidarPacket, PKG_VER_LEN);
+  }
+#endif
   
   delay(10);
 }
