@@ -114,4 +114,15 @@ void queueSpeech(const __FlashStringHelper * str)
   queueSpeech(buff);
 }
 
+#else
+
+
+void queueSpeech(const __FlashStringHelper * str) {
+  Serial.println(str);
+}
+
+void queueSpeech(const char * input) { 
+  Serial.println(input);
+}
+
 #endif

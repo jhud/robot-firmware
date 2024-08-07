@@ -17,7 +17,7 @@
 
 #define USE_OTA
 //#define USE_IR
-#define HIGH_QUALITY_SPEECH
+//#define HIGH_QUALITY_SPEECH
 
 #ifdef FIRST_ROBOT
   #define USE_VL53l0X
@@ -49,7 +49,12 @@
 #include <Arduino.h>
 
 #include "mpu6050.h"
+
+#ifdef USE_LIDAR
+#include "base64.hpp"
 #include "lidar_okdo.h"
+#endif
+
 #include "fast_io.h"
 
 #define WDT_TIMEOUT_S 15 // Overrride the OS default
@@ -973,11 +978,11 @@ void updateFootSwitches() {
   buttonsNow |= !digitalRead(2) << 5;
   buttonsNow |= !digitalRead(7) << 6;
   buttonsNow |= !digitalRead(10) << 7;
-#endif
 
-  // ui switch has interrupt, uses bit 8
+    // ui switch has interrupt, uses bit 8
 
   buttonsNow |= !digitalRead(FLASH_SWITCH_PIN) << 9;
+#endif
 
   pressed |= (buttonsNow ^ lastButtons) & buttonsNow;
 
@@ -1167,10 +1172,23 @@ void loop()
   }
   #endif
 
+//struct bytes 47
+//reported bytes 44 - not includeing header, len, and crc
+
 #ifdef USE_LIDAR
   LiDARFrameTypeDef * lidarPacket = lidar_update();
-  if (lidarPacket) {
-    clientSend((const char*)lidarPacket, PKG_VER_LEN);
+
+  
+  
+  if (client && lidarPacket) {
+    unsigned char buff[5000];
+        buff[0] = 'l';
+      auto structSize = sizeof(LiDARFrameTypeDef);
+        
+    int base64Length = encode_base64((unsigned char*)lidarPacket, structSize, buff+1);
+    buff[base64Length+1]='\n';
+    buff[base64Length+2]=0;
+    clientSendString((const char*)buff);
   }
 #endif
   
