@@ -17,7 +17,7 @@
 
 #define USE_OTA
 //#define USE_IR
-//#define HIGH_QUALITY_SPEECH
+#define HIGH_QUALITY_SPEECH
 
 #ifdef FIRST_ROBOT
   #define USE_VL53l0X
@@ -26,7 +26,7 @@
 #endif
 #define USE_DS2438
 //#define USE_IMU
-//#define I2C_SCAN
+#define I2C_SCAN
 
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
@@ -82,6 +82,14 @@
   #define FOOT_4_PIN 4
   
   #define IR_PIN 16
+
+  #define WIRE_1_SDA 21
+  #define WIRE_1_SCL 18
+
+  // PWM range of servo control
+  #define SERVOMIN  150 // This is the 'minimum' pulse length count (out of 4096)
+  #define SERVOMAX  550 // This is the 'maximum' pulse length count (out of 4096)
+  
 #else
 // Old board
   #define STATUS_LED_PIN 32
@@ -90,6 +98,13 @@
   #define ACTION_PUSHBUTTON_PIN 13
 
   #define IR_PIN 35
+
+  #define WIRE_1_SDA 21
+  #define WIRE_1_SCL 22
+
+  // Direct PWM control of motors
+  #define SERVOMIN  0 // This is the 'minimum' pulse length count (out of 4096)
+  #define SERVOMAX  4095 // This is the 'maximum' pulse length count (out of 4096)
 #endif
 
   #define KILLSWITCH_BUTTON_BITMASK (1 << 8) // bitmask of pushbutton in "pressed" bitfield
@@ -128,8 +143,6 @@ AsyncServer server(1234);
 
 #define NUM_OF(x) (sizeof(x)/sizeof(x[0]))
 
-#define SERVOMIN  150 // This is the 'minimum' pulse length count (out of 4096)
-#define SERVOMAX  550 // This is the 'maximum' pulse length count (out of 4096)
 #define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
 
 #define FP_SHIFT 12          // How many fixed point digits we have
@@ -637,7 +650,7 @@ void setup()
   log(F("Setting up I2C"));
 
   // --- TwoWire 0 (I2C) setup. The other I2C is setup by the PWM code.
-  primaryI2C.setPins(21, 18); // WIRE_1_SDA WIRE_1_SCL
+  primaryI2C.setPins(WIRE_1_SDA, WIRE_1_SCL); // WIRE_1_SDA WIRE_1_SCL
   Wire.begin(); // default of GPIOS 8 and 9 should be OK - WIRE_0
   primaryI2C.begin(); // the PWM library usually sets this up.
 
@@ -674,9 +687,11 @@ void setup()
    speechBegin();
 
 
+#ifdef USE_IMU
     if (mpu6050_init() == false) {
       settings.imuFrequencyMs = 0;
     }
+#endif
 
     
 
@@ -1173,12 +1188,10 @@ void loop()
   #endif
 
 //struct bytes 47
-//reported bytes 44 - not includeing header, len, and crc
+//reported bytes 44 - not including header, len, and crc
 
 #ifdef USE_LIDAR
   LiDARFrameTypeDef * lidarPacket = lidar_update();
-
-  
   
   if (client && lidarPacket) {
     unsigned char buff[5000];
