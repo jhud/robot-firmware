@@ -51,7 +51,6 @@
 #include "mpu6050.h"
 
 #ifdef USE_LIDAR
-#include "base64.hpp"
 #include "lidar_okdo.h"
 #endif
 
@@ -95,12 +94,15 @@
   #define STATUS_LED_PIN 32
   #define ERROR_LED_PIN 12
   #define TOGGLE_SWITCH_PIN 33 // Might not have interrupt, USE_for slide switch
-  #define ACTION_PUSHBUTTON_PIN 13
+  #define KILLSWITCH_PUSHBUTTON_PIN 13
 
   #define IR_PIN 35
 
   #define WIRE_1_SDA 21
   #define WIRE_1_SCL 22
+
+  #include "LiquidCrystal_I2C.h"
+  LiquidCrystal_I2C lcd(0x27, 16, 2);
 
   // Direct PWM control of motors
   #define SERVOMIN  0 // This is the 'minimum' pulse length count (out of 4096)
@@ -227,6 +229,8 @@ void set_pwm(int servo, int val) {
 void log(const String str) {
   if (digitalRead(TOGGLE_SWITCH_PIN)) {
     Serial.println(str);
+    lcd.setCursor(0,0);
+    lcd.print(str);
   }
   else {
     say(str.c_str());
@@ -236,6 +240,8 @@ void log(const String str) {
 void log(const __FlashStringHelper * str) {
     if (digitalRead(TOGGLE_SWITCH_PIN)) {
     Serial.println(str);
+    lcd.setCursor(0,0);
+    lcd.print(str);
   }
   else {
     say(str);
@@ -600,6 +606,7 @@ void setup_gpios() {
   pressed = 0;
 }
 
+
 void setup()
 {
   int ledStatus = 0;
@@ -607,6 +614,7 @@ void setup()
   Serial.begin(115200);
 
   delay(200);
+
   Serial.println(F("Starting up robot..."));
   delay(200);
 
@@ -651,8 +659,16 @@ void setup()
 
   // --- TwoWire 0 (I2C) setup. The other I2C is setup by the PWM code.
   primaryI2C.setPins(WIRE_1_SDA, WIRE_1_SCL); // WIRE_1_SDA WIRE_1_SCL
-  Wire.begin(); // default of GPIOS 8 and 9 should be OK - WIRE_0
+#ifndef FIRST_ROBOT
+    Wire.setPins(4,15); // First board had non-standard I2C
+#endif
+  //Wire.begin(); // default of GPIOS 8 and 9 should be OK - WIRE_0
+// LCD library begins Wire
+  lcd.init();
+  lcd.backlight();
+  
   primaryI2C.begin(); // the PWM library usually sets this up.
+  
 
 #ifdef I2C_SCAN
   { // I2C scan is fast, always do it
@@ -1194,16 +1210,10 @@ void loop()
   LiDARFrameTypeDef * lidarPacket = lidar_update();
   
   if (client && lidarPacket) {
-    unsigned char buff[5000];
-        buff[0] = 'l';
-      auto structSize = sizeof(LiDARFrameTypeDef);
-        
-    int base64Length = encode_base64((unsigned char*)lidarPacket, structSize, buff+1);
-    buff[base64Length+1]='\n';
-    buff[base64Length+2]=0;
-    clientSendString((const char*)buff);
+    clientSend((char*)lidarPacket, sizeof(LiDARFrameTypeDef));
   }
+  delay(1); // for LIDAR we need a massive throughput - new samples come about every 2.5ms
+#else
+  delay(10); // for LIDAR we need a massive throughput
 #endif
-  
-  delay(10);
 }

@@ -13,7 +13,7 @@
 
 static int state = 0;
 static int ptr = 0;
-static uint8_t data[sizeof(LiDARFrameTypeDef)]; 
+static uint8_t data[sizeof(LiDARFrameTypeDef)] = "l\n"; 
 
 
 bool lidar_init() {
@@ -29,12 +29,14 @@ bool lidar_init() {
  */
 LiDARFrameTypeDef * lidar_update()
 {
-  if (Serial2.available())
+  const int robotHeaderSize = sizeof(LiDARFrameTypeDef().robot_header);
+  
+  while (Serial2.available())
   {    
     auto val = Serial2.read();
     if (state == 0 && val == 0x54) {// start header
       state = 1;
-              ptr = 0;
+              ptr = robotHeaderSize;
             data[ptr++] = val;
     }
     else if (state == 1) { // length - never changes
@@ -47,14 +49,13 @@ LiDARFrameTypeDef * lidar_update()
       }
     }
     else if (state == 2) {
-            data[ptr++] = val;
-      if (ptr == PKG_VER_LEN) {
+      data[ptr++] = val;
+      if (ptr == sizeof(data)) {
         state = 0;
-        ptr = 0;
+        ptr = robotHeaderSize;
         return (LiDARFrameTypeDef *)data;
     }
     }
-   
   }
   return NULL;
 }

@@ -4,7 +4,7 @@
 
 enum {
   PKG_HEADER = 0x54,
-  PKG_VER_LEN = 0x2C,
+  PKG_VER_LEN = 0x2C, // 44
   POINT_PER_PACK = 12,
 };
 
@@ -14,6 +14,7 @@ typedef struct __attribute__((packed)) {
 } LidarPointStructDef;
 
 typedef struct __attribute__((packed)) {
+  uint16_t robot_header; // Include a standard header for James' robot library packet
   uint8_t header;
   uint8_t ver_len;
   uint16_t speed;
