@@ -3,6 +3,9 @@
 // UART TX only: 230400 8N1
 // Begins sending data as soon as it becomes stable.
 
+#include "config.h"
+
+#ifdef USE_LIDAR
 
 #include "lidar_okdo.h"
 
@@ -59,3 +62,5 @@ LiDARFrameTypeDef * lidar_update()
   }
   return NULL;
 }
+
+#endif

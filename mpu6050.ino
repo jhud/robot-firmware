@@ -1,5 +1,7 @@
 // Basic demo for accelerometer readings from Adafruit MPU6050
 
+#include "config.h"
+
 #include <Adafruit_MPU6050.h>
 #include <Wire.h>
 

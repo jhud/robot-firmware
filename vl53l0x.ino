@@ -1,3 +1,4 @@
+#include "config.h"
 
 // By default LIDAR device is at 0x29
 

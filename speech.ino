@@ -1,3 +1,5 @@
+#include "config.h"
+
 #ifdef HIGH_QUALITY_SPEECH
 
 

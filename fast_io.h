@@ -1,3 +1,6 @@
+#ifndef FAST_IO_H_
+#define FAST_IO_H_
+
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
 #include <soc/gpio_struct.h>
 #else
@@ -24,4 +27,5 @@ static inline __attribute__((always_inline)) void clear_gpio(int pin) {
         GPIO.out1_w1ts.val = ((uint32_t)1 << (pin - 32));
       }
 }
-    
+
+#endif // FAST_IO_H_

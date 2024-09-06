@@ -11,22 +11,8 @@
  *  Note the UART will not output stdout after this.
  *  
  */
-
-// The first complete robot, using ESP32-S3. Otherwise an older ESP32 board with different pin mappings.
-//#define FIRST_ROBOT
-
-#define USE_OTA
-//#define USE_IR
-#define HIGH_QUALITY_SPEECH
-
-#ifdef FIRST_ROBOT
-  #define USE_VL53l0X
-#else
-  #define USE_LIDAR
-#endif
-#define USE_DS2438
-//#define USE_IMU
-#define I2C_SCAN
+ 
+#include "config.h"
 
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
@@ -91,6 +77,9 @@
   
 #else
 // Old board
+
+#define USE_LCD
+
   #define STATUS_LED_PIN 32
   #define ERROR_LED_PIN 12
   #define TOGGLE_SWITCH_PIN 33 // Might not have interrupt, USE_for slide switch
@@ -229,8 +218,10 @@ void set_pwm(int servo, int val) {
 void log(const String str) {
   if (digitalRead(TOGGLE_SWITCH_PIN)) {
     Serial.println(str);
+        #ifdef USE_LCD
     lcd.setCursor(0,0);
     lcd.print(str);
+      #endif
   }
   else {
     say(str.c_str());
@@ -240,8 +231,10 @@ void log(const String str) {
 void log(const __FlashStringHelper * str) {
     if (digitalRead(TOGGLE_SWITCH_PIN)) {
     Serial.println(str);
+    #ifdef USE_LCD
     lcd.setCursor(0,0);
     lcd.print(str);
+    #endif
   }
   else {
     say(str);
@@ -360,12 +353,12 @@ static void handleData(void *arg, AsyncClient *clientSending, void *data, size_t
 
 static void handleError(void *arg, AsyncClient *client, int8_t error)
 {
-  Serial.println(F("connection error from client")); //, client->errorToString(error), client->remoteIP().toString().c_str());
+  log(F("connection error from client")); //, client->errorToString(error), client->remoteIP().toString().c_str());
 }
 
 static void handleDisconnect(void *arg, AsyncClient *clientDisconnecting)
 {
-  Serial.println(F("client disconnected"));
+  log(F("client disconnected"));
   client = NULL; // @todo how is client freed? Memory leak?
   relaxAll();
 }
@@ -376,8 +369,8 @@ static void handleTimeOut(void *arg, AsyncClient *timedOutClient, uint32_t time)
 {
   // Seems to be fatal - restart the connection brutally
   timedOutClient->close();
-  Serial.print(F("\n client ACK timeout time: ")); // Note that client info seems to be invalid.
-  Serial.println(time);
+  log(F("\n client ACK timeout time: ")); // Note that client info seems to be invalid.
+  log(time);
   server.end();
   server.begin();
 }
@@ -390,9 +383,8 @@ static void handleNewClient(void *arg, AsyncClient *newClient)
   client = newClient;
   client->setAckTimeout(WDT_TIMEOUT_S*1000); // Think it was timing out from speech and deadlocking the connection.
   client->setRxTimeout(WDT_TIMEOUT_S*1000);
-  Serial.print(F("New client has been connected to server, ip: "));
-  Serial.println(client->remoteIP().toString());
-  log(F("Client connected."));
+  log(F("New client connected: "));
+  log(client->remoteIP().toString());
   // register events
   client->onData(&handleData, NULL);
   client->onError(&handleError, NULL);
@@ -456,7 +448,10 @@ uint32_t parseCommand(char * packet, int length, unsigned int responseBufferSize
   }
   else if(cmd=='R') {
     if (length < sizeof(settings)+1) {
-      snprintf_P(responseBuffer, maxStringSize, PSTR(">Wrong length for settings\n"));
+      snprintf_P(responseBuffer, maxStringSize, PSTR(">Settings too short\n"));
+    }
+    if (length > sizeof(settings)) {
+      snprintf_P(responseBuffer, maxStringSize, PSTR(">Settings too long\n"));
     }
     else {
       memcpy((void*)&settings, cursor, sizeof(settings));
@@ -581,7 +576,7 @@ void setup_gpios() {
     pinMode(7, INPUT_PULLUP);
     pinMode(10, INPUT_PULLUP);
 #else
-  Serial.println(F("Foot switches disabled, not setting up."));
+  log(F("Foot switches disabled."));
 #endif
 
 #ifdef KILLSWITCH_PUSHBUTTON_PIN
@@ -662,10 +657,13 @@ void setup()
 #ifndef FIRST_ROBOT
     Wire.setPins(4,15); // First board had non-standard I2C
 #endif
-  //Wire.begin(); // default of GPIOS 8 and 9 should be OK - WIRE_0
+#ifndef USE_LCD
+  Wire.begin(); // default of GPIOS 8 and 9 should be OK - WIRE_0
+  #else
 // LCD library begins Wire
   lcd.init();
   lcd.backlight();
+  #endif
   
   primaryI2C.begin(); // the PWM library usually sets this up.
   
@@ -683,10 +681,10 @@ void setup()
 
   for (int i=0; i<NUM_OF(pwm); i++) {
     pwm[i].begin();
-    Serial.println(F("PWM begun."));
+    log(F("PWM begun."));
     pwm[i].setOscillatorFrequency(27000000);
     pwm[i].setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
-    Serial.println(F("Setup PWM controller."));
+    log(F("Setup PWM controller."));
   }
   delay(10);
 
@@ -1214,6 +1212,6 @@ void loop()
   }
   delay(1); // for LIDAR we need a massive throughput - new samples come about every 2.5ms
 #else
-  delay(10); // for LIDAR we need a massive throughput
+  delay(10); // normal update cycle
 #endif
 }
